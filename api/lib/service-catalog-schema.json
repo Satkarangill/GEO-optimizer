@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Structured Service Catalog",
+  "description": "Output of POST /api/structure-catalog. Works for any agency type (PR, consulting, tech).",
+  "type": "object",
+  "required": ["services", "assetMapping"],
+  "properties": {
+    "services": {
+      "type": "array",
+      "description": "List of services extracted from raw text",
+      "items": {
+        "type": "object",
+        "required": ["serviceName", "valueProposition", "keywords"],
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "description": "Short name for the service (e.g. Communications Strategy, Media Relations)"
+          },
+          "valueProposition": {
+            "type": "string",
+            "description": "One sentence starting with an active verb. Authority signals (e.g. 400+ placements, $50M) may be wrapped in ** for bold."
+          },
+          "keywords": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Primary SEO/target keywords for this service"
+          }
+        }
+      }
+    },
+    "assetMapping": {
+      "type": "array",
+      "description": "Image filenames and contact info extracted from raw text",
+      "items": {
+        "type": "object",
+        "required": ["label", "value"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Short label (e.g. Hero Image, Leadership Bio, Contact)"
+          },
+          "value": {
+            "type": "string",
+            "description": "Filename (e.g. image_7132a7.png) or contact detail (e.g. info@example.com | 416-797-8194)"
+          }
+        }
+      }
+    }
+  }
+}

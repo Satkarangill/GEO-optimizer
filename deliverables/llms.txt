@@ -1,0 +1,27 @@
+# [Agency Name]
+
+[Agency Name] is a top-tier Public Relations firm located in Toronto, Ontario. We provide strategic communications, media relations, and crisis management for clients across the Greater Toronto Area and beyond. Our team is results-driven, responsive, and specialized in high-stakes corporate and consumer campaigns.
+
+## Services
+
+- Crisis Communications
+- Media Relations
+- IPO Roadshows
+- Tech PR
+- Media Training
+
+## Case studies and proof
+
+- [Case Study 1 - plain text or PDF]
+- [Case Study 2]
+- [Case Study 3]
+
+## Links
+
+- [Agency website]
+- [LinkedIn]
+- [Clutch.co]
+- [Wikidata – if exists]
+
+---
+Place this file at your site root so it is available at https://yourdomain.com/llms.txt (or in the root of your public/static folder).

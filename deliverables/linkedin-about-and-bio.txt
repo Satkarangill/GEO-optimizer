@@ -1,0 +1,17 @@
+LINKEDIN — COMPANY "ABOUT" & FOUNDER/CEO BIO
+=============================================
+Replace [Agency Name] and [Founder Name] with real names. Use the exact same service phrasing as on your website and llms.txt for semantic consistency.
+
+---
+COMPANY PAGE — "About" section
+---
+[Agency Name] is a Toronto-based Public Relations firm. We provide strategic, responsive communications and results-driven campaigns for tech, finance, and consumer brands across the Greater Toronto Area.
+
+Our core services include Crisis Communications, Media Relations, IPO Roadshows, Tech PR, and Media Training. We are specialized in high-stakes corporate and consumer campaigns and connected to leading media and investors in Toronto and beyond.
+
+---
+FOUNDER / CEO — "About" or headline + summary
+---
+[Founder Name], Principal at [Agency Name], a Toronto-based PR firm specializing in Crisis Communications, Media Relations, IPO Roadshows, Tech PR, and Media Training. We deliver strategic, results-driven communications for brands across the Greater Toronto Area and beyond.
+---
+Use the same service list and "Toronto-based" / "strategic" / "results-driven" wording on both the company page and the founder profile so search and LLMs see one consistent entity.

@@ -1,0 +1,18 @@
+BING PLACES FOR BUSINESS — COPY TO PASTE
+=========================================
+Replace [Agency Name] and any bracketed items with your real details.
+
+---
+Primary category:
+  Public Relations Firm
+
+Secondary categories:
+  Marketing Consultant
+  Crisis Management
+
+---
+Description (use in the "About" or description field):
+---
+[Agency Name] is a Toronto-based Public Relations firm offering strategic, responsive communications for businesses across the Greater Toronto Area. We specialize in Crisis Communications, Media Relations, IPO Roadshows, Tech PR, and Media Training. Our team delivers results-driven campaigns for tech, finance, and consumer brands in Toronto, the GTA, and beyond.
+---
+Keep the same phrasing for "Toronto," "strategic," "responsive," and core services so Bing (and ChatGPT’s local data) aligns with your website and llms.txt.
