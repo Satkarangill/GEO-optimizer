@@ -36,6 +36,26 @@ export default async function middleware(request) {
     });
   }
 
+  const url = new URL(request.url);
+
+  // 1) Optional "magic link" style login via ?email=... in the URL.
+  //    If the email is allowed, we set the cookie and redirect to the same
+  //    path without the query string.
+  const urlEmail = (url.searchParams.get('email') || '').toLowerCase().trim();
+  if (urlEmail && ALLOWED_EMAILS.includes(urlEmail)) {
+    url.searchParams.delete('email');
+
+    return new Response(null, {
+      status: 307,
+      headers: {
+        'Location': url.toString(),
+        'Set-Cookie': `${AUTH_EMAIL_COOKIE}=${encodeURIComponent(
+          urlEmail,
+        )}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+      },
+    });
+  }
+
   const cookieHeader = request.headers.get('cookie') || '';
   const cookies = parseCookies(cookieHeader);
 
