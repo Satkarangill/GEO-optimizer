@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
-const API_URL = 'http://localhost:8000'
+const API_URL = 'http://localhost:3000'
 
 export default function App() {
   const [messages, setMessages] = useState([])
@@ -37,7 +37,7 @@ export default function App() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `Error: ${err.message}. Is the FastAPI server running on port 8000?` },
+        { role: 'assistant', content: `Error: ${err.message}. Is the Node API running on port 3000?` },
       ])
     } finally {
       setLoading(false)

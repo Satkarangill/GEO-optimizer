@@ -6,7 +6,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const MODEL = 'gemini-2.5-flash';
-const TIMEOUT_MS = 25000;
+const TIMEOUT_MS = 60000;
 
 const PROMPT = `You are an expert at organizing service descriptions into a clear, reusable structure. Your task is to turn raw, messy text into a Structured Service Catalog.
 
@@ -77,7 +77,8 @@ export default async function handler(req, res) {
       model: MODEL,
       generationConfig: {
         responseMimeType: 'application/json',
-        temperature: 0.3,
+        temperature: 0.2,
+        maxOutputTokens: 2048,
       },
     });
 

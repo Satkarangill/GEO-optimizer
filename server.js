@@ -10,11 +10,72 @@ import { analyzeText } from './api/lib/analyze.js';
 import generateOptimizedSchema from './api/generate-optimized-schema.js';
 import optimizeText from './api/optimize-text.js';
 import structureCatalog from './api/structure-catalog.js';
+import chatHandler from './api/chat.js';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// Simple CORS for local development; tighten origins as needed.
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+// Strict email whitelist for all routes (site-wide).
+// Auth method: HTTP Basic Auth (username=email, password=BASIC_AUTH_PASSWORD).
+const EMAIL_WHITELIST = new Set([
+  'satkarangill0@gmail.com',
+  'andrea@amplifyonline.ca',
+]);
+
+function parseBasicAuth(headerValue) {
+  if (!headerValue || typeof headerValue !== 'string') return null;
+  const [scheme, encoded] = headerValue.split(' ');
+  if (!scheme || scheme.toLowerCase() !== 'basic' || !encoded) return null;
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+    const idx = decoded.indexOf(':');
+    if (idx === -1) return null;
+    return {
+      username: decoded.slice(0, idx),
+      password: decoded.slice(idx + 1),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function requireWhitelist(req, res, next) {
+  const expectedPassword = process.env.BASIC_AUTH_PASSWORD;
+  if (!expectedPassword) {
+    return res.status(500).json({
+      error: 'Server misconfigured: BASIC_AUTH_PASSWORD is not set.',
+    });
+  }
+
+  const auth = parseBasicAuth(req.headers.authorization);
+  if (!auth || !auth.username || auth.password !== expectedPassword) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const email = String(auth.username).trim().toLowerCase();
+  if (!EMAIL_WHITELIST.has(email)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  req.user = { email };
+  next();
+}
+
+app.use(requireWhitelist);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -80,6 +141,17 @@ app.post('/api/structure-catalog', async (req, res) => {
   }
 });
 
+app.post('/api/chat', async (req, res) => {
+  try {
+    await chatHandler(req, res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) {
+      res.status(500).json({ response: 'Error calling chat endpoint' });
+    }
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Local API running at http://localhost:${PORT}`);
   console.log(`  GET  http://localhost:${PORT}/api/health`);
@@ -88,6 +160,7 @@ app.listen(PORT, () => {
   console.log(`  POST http://localhost:${PORT}/api/analyze-text`);
   console.log(`  POST http://localhost:${PORT}/api/optimize-text`);
   console.log(`  POST http://localhost:${PORT}/api/structure-catalog`);
+   console.log(`  POST http://localhost:${PORT}/api/chat`);
   if (!process.env.GEMINI_API_KEY) {
     console.warn('  ⚠ GEMINI_API_KEY not set — copy .env.example to .env and add your key for AI features.');
   }
