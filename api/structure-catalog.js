@@ -78,7 +78,8 @@ export default async function handler(req, res) {
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.2,
-        maxOutputTokens: 2048,
+        // Use a generous token limit so the JSON object doesn't get cut off.
+        maxOutputTokens: 4096,
       },
     });
 
@@ -103,8 +104,9 @@ export default async function handler(req, res) {
     try {
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      // Some deployments occasionally prepend/explain text around the JSON.
-      // As a fallback, try to extract the first {...} block.
+      // Some deployments occasionally prepend/explain text around the JSON,
+      // or truncate the JSON mid-string. Log the raw content for debugging
+      // and try a conservative fallback.
       const start = cleaned.indexOf('{');
       const end = cleaned.lastIndexOf('}');
       if (start !== -1 && end !== -1 && end > start) {
@@ -112,15 +114,25 @@ export default async function handler(req, res) {
         try {
           parsed = JSON.parse(candidate);
         } catch (inner) {
-          console.error('Structure catalog JSON parse error (fallback failed):', inner.message, 'raw:', cleaned.slice(0, 200));
-          return res.status(502).json({
-            error: 'Gemini response was not valid JSON. Try again.',
+          console.error(
+            'Structure catalog JSON parse error (fallback failed):',
+            inner.message,
+            'raw:',
+            cleaned.slice(0, 500),
+          );
+          return res.status(500).json({
+            error: 'Gemini response was malformed. Please try again.',
           });
         }
       } else {
-        console.error('Structure catalog JSON parse error:', e.message, 'raw:', cleaned.slice(0, 200));
-        return res.status(502).json({
-          error: 'Gemini response was not valid JSON. Try again.',
+        console.error(
+          'Structure catalog JSON parse error:',
+          e.message,
+          'raw:',
+          cleaned.slice(0, 500),
+        );
+        return res.status(500).json({
+          error: 'Gemini response was malformed. Please try again.',
         });
       }
     }
