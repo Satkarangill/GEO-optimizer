@@ -98,13 +98,31 @@ export default async function handler(req, res) {
     }
 
     let parsed;
+    const rawText = response.text();
+    const cleaned = stripJsonPreamble(rawText);
     try {
-      parsed = JSON.parse(stripJsonPreamble(response.text()));
+      parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error('Structure catalog JSON parse error:', e.message);
-      return res.status(502).json({
-        error: 'Gemini response was not valid JSON. Try again.',
-      });
+      // Some deployments occasionally prepend/explain text around the JSON.
+      // As a fallback, try to extract the first {...} block.
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        const candidate = cleaned.slice(start, end + 1);
+        try {
+          parsed = JSON.parse(candidate);
+        } catch (inner) {
+          console.error('Structure catalog JSON parse error (fallback failed):', inner.message, 'raw:', cleaned.slice(0, 200));
+          return res.status(502).json({
+            error: 'Gemini response was not valid JSON. Try again.',
+          });
+        }
+      } else {
+        console.error('Structure catalog JSON parse error:', e.message, 'raw:', cleaned.slice(0, 200));
+        return res.status(502).json({
+          error: 'Gemini response was not valid JSON. Try again.',
+        });
+      }
     }
 
     const services = Array.isArray(parsed.services)
