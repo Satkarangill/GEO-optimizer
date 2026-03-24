@@ -52,6 +52,65 @@ function stripJsonPreamble(text) {
     .trim();
 }
 
+function extractFirstBalancedJsonObject(input) {
+  const text = String(input || '');
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function parseGeminiJson(rawText) {
+  const cleaned = stripJsonPreamble(rawText);
+  const attempts = [cleaned];
+
+  const balanced = extractFirstBalancedJsonObject(cleaned);
+  if (balanced) attempts.push(balanced);
+
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Keep trying next candidate.
+    }
+  }
+
+  // Last-chance cleanup for common model formatting issues.
+  const fallback = (balanced || cleaned)
+    .replace(/,\s*([}\]])/g, '$1') // trailing commas
+    .replace(/\u0000/g, '')
+    .trim();
+  return JSON.parse(fallback);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -100,36 +159,44 @@ export default async function handler(req, res) {
 
     let parsed;
     const rawText = response.text();
-    const cleaned = stripJsonPreamble(rawText);
     try {
-      parsed = JSON.parse(cleaned);
+      parsed = parseGeminiJson(rawText);
     } catch (e) {
-      // Some deployments occasionally prepend/explain text around the JSON,
-      // or truncate the JSON mid-string. Log the raw content for debugging
-      // and try a conservative fallback.
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      if (start !== -1 && end !== -1 && end > start) {
-        const candidate = cleaned.slice(start, end + 1);
+      // If model response is close-but-invalid JSON, ask Gemini once to repair it.
+      try {
+        const repairPrompt = [
+          'Repair this into valid JSON only.',
+          'Do not add explanation, markdown, or code fences.',
+          'Preserve keys and values as much as possible.',
+          '',
+          rawText,
+        ].join('\n');
+        const repairedResult = await Promise.race([
+          model.generateContent(repairPrompt),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
+          ),
+        ]);
+        const repairedText = repairedResult?.response?.text?.() || '';
         try {
-          parsed = JSON.parse(candidate);
+          parsed = parseGeminiJson(repairedText);
         } catch (inner) {
           console.error(
-            'Structure catalog JSON parse error (fallback failed):',
+            'Structure catalog JSON parse error (repair failed):',
             inner.message,
             'raw:',
-            cleaned.slice(0, 500),
+            String(rawText).slice(0, 500),
           );
           return res.status(500).json({
             error: 'Gemini response was malformed. Please try again.',
           });
         }
-      } else {
+      } catch (repairErr) {
         console.error(
-          'Structure catalog JSON parse error:',
+          'Structure catalog JSON parse error (repair request failed):',
           e.message,
           'raw:',
-          cleaned.slice(0, 500),
+          String(rawText).slice(0, 500),
         );
         return res.status(500).json({
           error: 'Gemini response was malformed. Please try again.',
