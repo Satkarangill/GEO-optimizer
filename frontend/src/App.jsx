@@ -1,18 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
-const getApiBase = () => {
-  const configured = (import.meta.env.VITE_API_URL || '').trim()
-  if (!configured) return ''
-  if (typeof window !== 'undefined') {
-    const isLocalPage =
-      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    const pointsToLocalApi =
-      configured.includes('localhost') || configured.includes('127.0.0.1')
-    if (!isLocalPage && pointsToLocalApi) return ''
-  }
-  return configured.replace(/\/+$/, '')
-}
+const API_URL = 'http://localhost:3000'
 
 export default function App() {
   const [messages, setMessages] = useState([])
@@ -37,7 +26,7 @@ export default function App() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${getApiBase()}/api/chat`, {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),

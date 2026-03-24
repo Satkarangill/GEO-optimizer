@@ -1,17 +1,8 @@
 import { useState } from 'react'
 
 const getApiBase = () => {
-  const configured = (import.meta.env.VITE_API_URL || '').trim()
-  if (!configured) return ''
-  if (typeof window !== 'undefined') {
-    const isLocalPage =
-      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    const pointsToLocalApi =
-      configured.includes('localhost') || configured.includes('127.0.0.1')
-    // Prevent broken production calls if VITE_API_URL was set to localhost in hosted env.
-    if (!isLocalPage && pointsToLocalApi) return ''
-  }
-  return configured.replace(/\/+$/, '')
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
+  return ''
 }
 
 const INDUSTRY_OPTIONS = [
