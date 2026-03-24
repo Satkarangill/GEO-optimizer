@@ -43,6 +43,17 @@ Raw text to process:
 ---
 `;
 
+const KNOWN_SERVICE_NAMES = [
+  'Communications Strategy',
+  'Media Relations',
+  'Thought Leadership',
+  'Advocacy',
+  'Branding / Narrative Development',
+  'Spokesperson & Media Training',
+  'Crisis Planning & Communications',
+  'Digital Communications & Social Media Management',
+];
+
 function stripJsonPreamble(text) {
   const raw = (text || '').trim();
   return raw
@@ -109,6 +120,62 @@ function parseGeminiJson(rawText) {
     .replace(/\u0000/g, '')
     .trim();
   return JSON.parse(fallback);
+}
+
+function splitParagraphs(text) {
+  return String(text || '')
+    .split(/\n\s*\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 40);
+}
+
+function detectServiceName(paragraph, index) {
+  for (const name of KNOWN_SERVICE_NAMES) {
+    if (paragraph.toLowerCase().includes(name.toLowerCase())) return name;
+  }
+  const firstSentence = paragraph.split(/[.!?]/)[0]?.trim() || '';
+  if (firstSentence && firstSentence.length <= 90) return firstSentence;
+  return `Service ${index + 1}`;
+}
+
+function extractKeywords(paragraph) {
+  const candidates = [];
+  const patterns = [
+    /best pr agency in toronto/gi,
+    /pr agency in toronto/gi,
+    /communications strategy/gi,
+    /media relations/gi,
+    /thought leadership/gi,
+    /crisis (planning|communications|management)/gi,
+    /digital communications/gi,
+    /social media management/gi,
+    /branding/gi,
+    /narrative development/gi,
+    /advocacy/gi,
+    /media training/gi,
+  ];
+  for (const pattern of patterns) {
+    const match = paragraph.match(pattern);
+    if (match && match[0]) candidates.push(match[0]);
+  }
+  // Add repeated authority/style tokens if present.
+  ['data-driven', 'results-driven', 'transparent', 'authority'].forEach((term) => {
+    if (paragraph.toLowerCase().includes(term)) candidates.push(term);
+  });
+
+  const unique = [...new Set(candidates.map((k) => k.trim()))];
+  return unique.slice(0, 5);
+}
+
+function fallbackServicesFromText(text) {
+  const paragraphs = splitParagraphs(text);
+  if (paragraphs.length < 2) return [];
+
+  return paragraphs.map((p, i) => ({
+    serviceName: detectServiceName(p, i),
+    valueProposition: p,
+    keywords: extractKeywords(p),
+  }));
 }
 
 export default async function handler(req, res) {
@@ -218,8 +285,13 @@ export default async function handler(req, res) {
         }))
       : [];
 
+    // If Gemini collapsed a large multi-paragraph input into one item,
+    // split it into service rows so the UI reflects the full source content.
+    const expandedServices =
+      services.length <= 1 ? fallbackServicesFromText(text) : services;
+
     return res.status(200).json({
-      services,
+      services: expandedServices.length > 0 ? expandedServices : services,
       assetMapping,
     });
   } catch (err) {
