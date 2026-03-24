@@ -12,7 +12,7 @@ const PROMPT = `You are an expert at organizing service descriptions into a clea
 
 RULES:
 1. **Services**: Extract every distinct service/offering. For each one provide:
-   - serviceName: Short, clear name (e.g. "Communications Strategy", "Media Relations").
+   - serviceName: Short, clear human-readable name (e.g. "Communications Strategy", "Crisis Communications"). Never use placeholders like "Service 1" or "Service 7". Every row must have 2–5 keywords — never leave keywords empty.
    - valueProposition: The FULL original description for this service — do NOT shorten or summarize. Keep the same length and detail as the source text. Only edit to: (a) ensure it starts with an active verb (e.g. "Develops", "Leverages", "Empowering"), and (b) wrap "Authority Signals" in double asterisks for bold (e.g. "**400+ tier-1 placements**", "**$50M in exit value**", years, client counts). If the original is a long paragraph, keep the full paragraph.
    - keywords: Array of 2–5 primary SEO/target keywords for that service (e.g. ["PR Agency Toronto", "Data-driven Strategy"]).
 
@@ -53,6 +53,70 @@ const KNOWN_SERVICE_NAMES = [
   'Crisis Planning & Communications',
   'Digital Communications & Social Media Management',
 ];
+
+/** Longest first — used to infer a real title when the model left "Service N". */
+const KNOWN_SERVICE_NAMES_FOR_INFERENCE = [
+  ...new Set([
+    'Digital Communications & Social Media Management',
+    'Branding / Narrative Development',
+    'Spokesperson & Media Training',
+    'Crisis Planning & Communications',
+    'Communications Strategy',
+    'Crisis Communications',
+    'Crisis Planning',
+    'Digital Communications',
+    'Social Media Management',
+    'Thought Leadership',
+    'Media Relations',
+    'Narrative Development',
+    'Branding',
+    'Advocacy',
+    ...KNOWN_SERVICE_NAMES,
+  ]),
+].sort((a, b) => b.length - a.length);
+
+function inferServiceNameFromValueProposition(valueProposition) {
+  const clean = String(valueProposition || '')
+    .replace(/\*\*/g, '')
+    .replace(/^More Info\s*/i, '')
+    .trim();
+  const lower = clean.toLowerCase();
+  for (const cand of KNOWN_SERVICE_NAMES_FOR_INFERENCE) {
+    if (lower.includes(cand.toLowerCase())) return cand;
+  }
+  return null;
+}
+
+/**
+ * Fix placeholder names, fill empty keywords from copy or service title.
+ */
+function normalizeCatalogServices(services) {
+  return (services || []).map((s) => {
+    const vp = typeof s.valueProposition === 'string' ? s.valueProposition : '';
+    let name = typeof s.serviceName === 'string' ? s.serviceName.trim() : '';
+    let keywords = Array.isArray(s.keywords)
+      ? s.keywords.filter((k) => typeof k === 'string').map((k) => k.trim()).filter(Boolean)
+      : [];
+
+    if (/^service\s*\d+$/i.test(name)) {
+      const inferred = inferServiceNameFromValueProposition(vp);
+      if (inferred) name = inferred;
+    }
+
+    if (keywords.length === 0) {
+      keywords = extractKeywords(vp);
+    }
+    if (keywords.length === 0 && name && !/^service\s*\d+$/i.test(name)) {
+      const parts = name
+        .split(/\s*[\/,]\s*|\s+&\s+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 2);
+      if (parts.length) keywords = parts.slice(0, 5);
+    }
+
+    return { serviceName: name, valueProposition: vp, keywords };
+  });
+}
 
 function stripJsonPreamble(text) {
   const raw = (text || '').trim();
@@ -290,8 +354,10 @@ export default async function handler(req, res) {
     const expandedServices =
       services.length <= 1 ? fallbackServicesFromText(text) : services;
 
+    const rawOut = expandedServices.length > 0 ? expandedServices : services;
+
     return res.status(200).json({
-      services: expandedServices.length > 0 ? expandedServices : services,
+      services: normalizeCatalogServices(rawOut),
       assetMapping,
     });
   } catch (err) {

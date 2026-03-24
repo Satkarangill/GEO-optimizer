@@ -150,7 +150,6 @@ function App() {
                 valuePropositionText={valuePropositionText}
                 optimizedText={sharedOptimizedText}
                 catalog={sharedCatalog}
-                analysisResult={sharedResult}
               />
             </div>
             <div className="mediaDrawer">
