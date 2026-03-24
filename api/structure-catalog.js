@@ -267,7 +267,8 @@ export default async function handler(req, res) {
       model: MODEL,
       generationConfig: {
         responseMimeType: 'application/json',
-        temperature: 0.2,
+        // 0 = most deterministic; higher values = more variation on identical prompts.
+        temperature: 0,
         // Use a generous token limit so the JSON object doesn't get cut off.
         maxOutputTokens: 4096,
       },
