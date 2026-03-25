@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import ServiceStrategyCatalog from './ServiceStrategyCatalog'
 
 const getApiBase = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL
@@ -21,7 +20,6 @@ export default function KeywordChecker({ onShare }) {
   const [catalogError, setCatalogError] = useState('')
   const [copiedCatalog, setCopiedCatalog] = useState(false)
   const [error, setError] = useState('')
-  const [authoritySignals, setAuthoritySignals] = useState([])
 
   const handleAnalyze = async () => {
     setError('')
@@ -102,9 +100,9 @@ export default function KeywordChecker({ onShare }) {
 
   useEffect(() => {
     if (typeof onShare === 'function') {
-      onShare({ catalog, optimizedText, result, text, authoritySignals })
+      onShare({ catalog, optimizedText, result, text })
     }
-  }, [catalog, optimizedText, result, text, authoritySignals, onShare])
+  }, [catalog, optimizedText, result, text, onShare])
 
   const copyOptimized = () => {
     if (!optimizedText) return
@@ -119,12 +117,11 @@ export default function KeywordChecker({ onShare }) {
     setCatalogError('')
     setCatalog(null)
     setLoadingCatalog(true)
-    const payloadText = (optimizedText || text).trim()
     try {
       const res = await fetch(`${getApiBase()}/api/structure-catalog`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: payloadText }),
+        body: JSON.stringify({ text: text.trim() }),
       })
       const raw = await res.text()
       let data
@@ -325,10 +322,26 @@ export default function KeywordChecker({ onShare }) {
             </button>
             {copiedCatalog && <span className="copied">Copied</span>}
           </div>
-          <ServiceStrategyCatalog
-            catalog={catalog}
-            onAuthoritySignals={setAuthoritySignals}
-          />
+          <div className="catalogTableWrap">
+            <table className="catalogTable">
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Value Proposition</th>
+                  <th>Targeted Keywords</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(catalog.services || []).map((s, i) => (
+                  <tr key={i}>
+                    <td>{s.serviceName}</td>
+                    <td>{withBold(s.valueProposition)}</td>
+                    <td>{(s.keywords || []).join(', ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
             {catalog.assetMapping && catalog.assetMapping.length > 0 && (
             <div className="assetMapping">
               <h2 className="sectionTitle mediaAssetsTitle">
@@ -352,6 +365,12 @@ export default function KeywordChecker({ onShare }) {
       )}
     </>
   )
+}
+
+function withBold(str) {
+  if (typeof str !== 'string') return null
+  const parts = str.split(/\*\*(.+?)\*\*/g)
+  return parts.map((p, i) => (i % 2 === 1 ? <strong key={i}>{p}</strong> : p))
 }
 
 function escapeHtml(s) {

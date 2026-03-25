@@ -128,7 +128,6 @@ export default function OptimizationSidebar({
   valuePropositionText = '',
   optimizedText = '',
   catalog = null,
-  authoritySignals = [],
 }) {
   const combinedText = [valuePropositionText, optimizedText].filter(Boolean).join('\n\n')
 
@@ -145,13 +144,6 @@ export default function OptimizationSidebar({
     if (missingKeywords.length === 0) return 'full'
     return 'gaps'
   }, [services.length, missingKeywords.length])
-
-  const authorityPills = useMemo(() => {
-    if (Array.isArray(authoritySignals) && authoritySignals.length > 0) {
-      return authoritySignals.map((s) => String(s)).filter(Boolean)
-    }
-    return entities.map((e) => e.name).filter(Boolean)
-  }, [authoritySignals, entities])
 
   return (
     <aside className="optimizationSidebar">
@@ -177,18 +169,18 @@ export default function OptimizationSidebar({
       </div>
 
       <div className="sidebarSection">
-        <h4 className="sidebarSectionTitle">Authority Signal Pills</h4>
-        <p className="sidebarHint">Names, locations, and quantifiable results extracted from your catalog value propositions</p>
+        <h4 className="sidebarSectionTitle">Detected Entities</h4>
+        <p className="sidebarHint">Distinct services and keywords from your catalog (duplicates and noise hidden)</p>
         <div className="entityPills">
-          {authorityPills.length === 0 && (
-            <span className="entityPill entityPillMuted">No authority signals yet — run Structure catalog first</span>
+          {entities.length === 0 && (
+            <span className="entityPill entityPillMuted">No entities yet — structure a catalog first</span>
           )}
-          {authorityPills.map((name, i) => (
+          {entities.map((e, i) => (
             <span
-              key={`${name}-${i}`}
-              className={'entityPill entityPillStrong'}
+              key={`${e.name}-${i}`}
+              className={`entityPill ${e.strong ? 'entityPillStrong' : 'entityPillGeneric'}`}
             >
-              {name}
+              {e.name}
             </span>
           ))}
         </div>
