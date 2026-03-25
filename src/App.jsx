@@ -52,6 +52,7 @@ function App() {
   const [sharedOptimizedText, setSharedOptimizedText] = useState('')
   const [sharedResult, setSharedResult] = useState(null)
   const [sharedText, setSharedText] = useState('')
+  const [sharedAuthoritySignals, setSharedAuthoritySignals] = useState([])
   const [mediaDrawerOpen, setMediaDrawerOpen] = useState(true)
 
   const handleShare = (data) => {
@@ -59,6 +60,7 @@ function App() {
     if (data.optimizedText !== undefined) setSharedOptimizedText(data.optimizedText)
     if (data.result !== undefined) setSharedResult(data.result)
     if (data.text !== undefined) setSharedText(data.text)
+    if (data.authoritySignals !== undefined) setSharedAuthoritySignals(data.authoritySignals)
   }
 
   const valuePropositionText = (sharedCatalog?.services || [])
@@ -150,6 +152,7 @@ function App() {
                 valuePropositionText={valuePropositionText}
                 optimizedText={sharedOptimizedText}
                 catalog={sharedCatalog}
+                authoritySignals={sharedAuthoritySignals}
               />
             </div>
             <div className="mediaDrawer">
